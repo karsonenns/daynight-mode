@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -75,13 +79,18 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v3
     
     - name: Extract version from package.json
       id: package_version
-      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "Extracted version: $VERSION"
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
     
     # Debug artifacts and workflow
     - name: List available artifacts
@@ -148,5 +157,17 @@ jobs:
         files: |
           ${{ steps.chrome_zip.outputs.CHROME_ZIP }}
           ${{ steps.firefox_zip.outputs.FIREFOX_ZIP }}
+        fail_on_unmatched_files: false
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        GITHUB_TOKEN: ${{ github.token }}
+
+    - name: Debug Release Failure
+      if: ${{ failure() && steps.create_release.conclusion == 'failure' }}
+      run: |
+        echo "Release creation failed"
+        echo "Version: ${{ steps.package_version.outputs.VERSION }}"
+        echo "Chrome ZIP: ${{ steps.chrome_zip.outputs.CHROME_ZIP }}"
+        echo "Firefox ZIP: ${{ steps.firefox_zip.outputs.FIREFOX_ZIP }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "GitHub Actor: ${{ github.actor }}"
+        echo "GitHub Ref: ${{ github.ref }}" 
