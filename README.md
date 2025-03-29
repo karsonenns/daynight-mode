@@ -1,13 +1,9 @@
 # DayNight Mode ![Chrome Web Store](https://img.shields.io/chrome-web-store/v/YOUR_EXTENSION_ID?style=flat-square) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square) ![Built with WXT](https://img.shields.io/badge/Built_with-WXT-blue.svg?style=flat-square)
 
-<p align="center">
-  <video width="100%" autoplay loop muted playsinline>
-    <source src="./assets/readme-hero.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-</p>
 
 This browser extension automatically applies a dark or light theme to websites based on the operating system's preferred color scheme.
+
+https://github.com/user-attachments/assets/ad3f7919-dab1-4ab9-9d72-c6d3b18661e7
 
 ## Features
 
@@ -30,3 +26,6 @@ Built using the modern [WXT](https://wxt.dev/) framework and TypeScript.
 ---
 
 MIT License
+
+
+
