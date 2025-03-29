@@ -21,6 +21,10 @@ jobs:
         cache: 'npm'
         cache-dependency-path: package-lock.json
     
+    - name: Extract package version
+      id: package_version
+      run: echo "VERSION=$(node -p \"require('./package.json').version\")" >> $GITHUB_OUTPUT
+    
     - name: Install dependencies
       run: npm ci
     
@@ -36,20 +40,23 @@ jobs:
     - name: List output directory
       run: |
         echo "Output directory contents:"
+        ls -l .output/
         find .output -name "*.zip" | sort
     
     - name: Upload Chrome build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: chrome-extension
-        path: .output/daynight-mode-*-chrome.zip
+        path: .output/daynight-mode-${{ steps.package_version.outputs.VERSION }}-chrome.zip
+        if-no-files-found: error
         retention-days: 1
     
     - name: Upload Firefox build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: firefox-extension
-        path: .output/daynight-mode-*-firefox.zip
+        path: .output/daynight-mode-${{ steps.package_version.outputs.VERSION }}-firefox.zip
+        if-no-files-found: error
         retention-days: 1
 
   release:
@@ -98,20 +105,24 @@ jobs:
     - name: Find Chrome ZIP file
       id: chrome_zip
       run: |
-        if [ -d "./chrome-extension" ] && [ "$(ls -A ./chrome-extension)" ]; then
-          echo "CHROME_ZIP=$(ls ./chrome-extension/daynight-mode-*-chrome.zip | head -n 1)" >> $GITHUB_OUTPUT
+        ZIP_FILE=$(ls ./chrome-extension/daynight-mode-*-chrome.zip | head -n 1)
+        if [ -f "$ZIP_FILE" ]; then
+          echo "CHROME_ZIP=$ZIP_FILE" >> $GITHUB_OUTPUT
         else
-          echo "No Chrome ZIP found"
+          echo "No Chrome ZIP found in ./chrome-extension/"
+          ls -la ./chrome-extension/
           exit 1
         fi
     
     - name: Find Firefox ZIP file
       id: firefox_zip
       run: |
-        if [ -d "./firefox-extension" ] && [ "$(ls -A ./firefox-extension)" ]; then
-          echo "FIREFOX_ZIP=$(ls ./firefox-extension/daynight-mode-*-firefox.zip | head -n 1)" >> $GITHUB_OUTPUT
+        ZIP_FILE=$(ls ./firefox-extension/daynight-mode-*-firefox.zip | head -n 1)
+        if [ -f "$ZIP_FILE" ]; then
+          echo "FIREFOX_ZIP=$ZIP_FILE" >> $GITHUB_OUTPUT
         else
-          echo "No Firefox ZIP found"
+          echo "No Firefox ZIP found in ./firefox-extension/"
+          ls -la ./firefox-extension/
           exit 1
         fi
     
