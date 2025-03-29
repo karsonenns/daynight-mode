@@ -54,7 +54,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: chrome-extension
-        path: .output/daynight-mode-0.0.0-chrome.zip
+        path: .output/daynight-mode-${{ steps.package_version.outputs.VERSION }}-chrome.zip
         if-no-files-found: error
         retention-days: 1
     
