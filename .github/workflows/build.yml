@@ -21,13 +21,6 @@ jobs:
         cache: 'npm'
         cache-dependency-path: package-lock.json
     
-    - name: Extract version from package.json
-      id: package_version
-      run: |
-        VERSION=$(node -p "require('./package.json').version")
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Extracted version: $VERSION"
-    
     - name: Install dependencies
       run: npm ci
     
@@ -40,24 +33,19 @@ jobs:
     - name: Create Firefox ZIP
       run: npm run zip:firefox
     
-    - name: List ZIP files
-      run: |
-        ls -la .output/chrome-mv3/zip/
-        ls -la .output/firefox-mv3/zip/
-    
-    - name: Upload Chrome build artifact
+    - name: Upload Chrome build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: chrome-extension
         path: .output/chrome-mv3/zip/*.zip
-        retention-days: 7
+        retention-days: 1
     
-    - name: Upload Firefox build artifact
+    - name: Upload Firefox build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: firefox-extension
         path: .output/firefox-mv3/zip/*.zip
-        retention-days: 7
+        retention-days: 1
 
   release:
     needs: build
@@ -68,12 +56,20 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Get version from package.json
+    - name: Extract version from package.json
       id: package_version
+      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+    
+    # Debug artifacts and workflow
+    - name: List available artifacts
       run: |
-        VERSION=$(node -p "require('./package.json').version")
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Release version: $VERSION"
+        echo "Workflow run ID: ${{ github.run_id }}"
+        echo "Available artifacts via API:"
+        curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts"
     
     - name: Download Chrome artifact
       uses: actions/download-artifact@v4
@@ -87,10 +83,32 @@ jobs:
         name: firefox-extension
         path: ./firefox-extension
     
-    - name: List downloaded artifacts
+    - name: List downloaded files
       run: |
-        ls -la ./chrome-extension/
-        ls -la ./firefox-extension/
+        echo "Chrome artifacts:"
+        ls -la ./chrome-extension || echo "Chrome directory not found"
+        echo "Firefox artifacts:"
+        ls -la ./firefox-extension || echo "Firefox directory not found"
+    
+    - name: Find Chrome ZIP file
+      id: chrome_zip
+      run: |
+        if [ -d "./chrome-extension" ] && [ "$(ls -A ./chrome-extension)" ]; then
+          echo "CHROME_ZIP=$(ls ./chrome-extension/*.zip | head -n 1)" >> $GITHUB_OUTPUT
+        else
+          echo "No Chrome ZIP found"
+          exit 1
+        fi
+    
+    - name: Find Firefox ZIP file
+      id: firefox_zip
+      run: |
+        if [ -d "./firefox-extension" ] && [ "$(ls -A ./firefox-extension)" ]; then
+          echo "FIREFOX_ZIP=$(ls ./firefox-extension/*.zip | head -n 1)" >> $GITHUB_OUTPUT
+        else
+          echo "No Firefox ZIP found"
+          exit 1
+        fi
     
     - name: Create Release
       id: create_release
@@ -101,7 +119,7 @@ jobs:
         draft: false
         prerelease: false
         files: |
-          ./chrome-extension/*.zip
-          ./firefox-extension/*.zip
+          ${{ steps.chrome_zip.outputs.CHROME_ZIP }}
+          ${{ steps.firefox_zip.outputs.FIREFOX_ZIP }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
