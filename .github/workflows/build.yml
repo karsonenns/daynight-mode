@@ -32,19 +32,24 @@ jobs:
     
     - name: Create Firefox ZIP
       run: npm run zip:firefox
+      
+    - name: List output directory
+      run: |
+        echo "Output directory contents:"
+        find .output -name "*.zip" | sort
     
     - name: Upload Chrome build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: chrome-extension
-        path: .output/chrome-mv3/zip/*.zip
+        path: .output/daynight-mode-*.zip
         retention-days: 1
     
     - name: Upload Firefox build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: firefox-extension
-        path: .output/firefox-mv3/zip/*.zip
+        path: .output/daynight-mode-*-firefox.zip
         retention-days: 1
 
   release:
@@ -94,7 +99,7 @@ jobs:
       id: chrome_zip
       run: |
         if [ -d "./chrome-extension" ] && [ "$(ls -A ./chrome-extension)" ]; then
-          echo "CHROME_ZIP=$(ls ./chrome-extension/*.zip | head -n 1)" >> $GITHUB_OUTPUT
+          echo "CHROME_ZIP=$(ls ./chrome-extension/daynight-mode-*-chrome.zip | head -n 1)" >> $GITHUB_OUTPUT
         else
           echo "No Chrome ZIP found"
           exit 1
@@ -104,7 +109,7 @@ jobs:
       id: firefox_zip
       run: |
         if [ -d "./firefox-extension" ] && [ "$(ls -A ./firefox-extension)" ]; then
-          echo "FIREFOX_ZIP=$(ls ./firefox-extension/*.zip | head -n 1)" >> $GITHUB_OUTPUT
+          echo "FIREFOX_ZIP=$(ls ./firefox-extension/daynight-mode-*-firefox.zip | head -n 1)" >> $GITHUB_OUTPUT
         else
           echo "No Firefox ZIP found"
           exit 1
