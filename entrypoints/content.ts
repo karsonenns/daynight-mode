@@ -87,6 +87,12 @@ export default defineContentScript({
         img, video, picture, svg, canvas {
           filter: invert(100%) hue-rotate(180deg);
         }
+        
+        /* Ensure text is visible in plain text files and code blocks */
+        pre, code, plaintext, .blob-code-inner, .text-mono {
+          color: #333 !important;
+          filter: invert(100%) hue-rotate(180deg);
+        }
       `;
     };
     
