@@ -1,5 +1,8 @@
 # DayNight Mode ![Chrome Web Store](https://img.shields.io/chrome-web-store/v/YOUR_EXTENSION_ID?style=flat-square) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square) ![Built with WXT](https://img.shields.io/badge/Built_with-WXT-blue.svg?style=flat-square)
 
+<p align="center">
+  <img src="./assets/readme-hero.gif" alt="DayNight Mode Demo" width="100%">
+</p>
 
 This browser extension automatically applies a dark or light theme to websites based on the operating system's preferred color scheme.
 
