@@ -42,7 +42,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: chrome-extension
-        path: .output/daynight-mode-*.zip
+        path: .output/daynight-mode-*-chrome.zip
         retention-days: 1
     
     - name: Upload Firefox build artifacts
