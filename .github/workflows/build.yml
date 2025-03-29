@@ -10,10 +10,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      chrome_zip_name: ${{ steps.set_outputs.outputs.chrome_zip_name }}
-      firefox_zip_name: ${{ steps.set_outputs.outputs.firefox_zip_name }}
-      version: ${{ steps.package_version.outputs.VERSION }}
     
     steps:
     - uses: actions/checkout@v3
@@ -27,7 +23,10 @@ jobs:
     
     - name: Extract version from package.json
       id: package_version
-      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extracted version: $VERSION"
     
     - name: Install dependencies
       run: npm ci
@@ -41,27 +40,24 @@ jobs:
     - name: Create Firefox ZIP
       run: npm run zip:firefox
     
-    - name: Set output variables
-      id: set_outputs
+    - name: List ZIP files
       run: |
-        chrome_zip_file=$(ls .output/chrome-mv3/zip/*.zip | head -n 1)
-        firefox_zip_file=$(ls .output/firefox-mv3/zip/*.zip | head -n 1)
-        echo "chrome_zip_name=$(basename $chrome_zip_file)" >> $GITHUB_OUTPUT
-        echo "firefox_zip_name=$(basename $firefox_zip_file)" >> $GITHUB_OUTPUT
+        ls -la .output/chrome-mv3/zip/
+        ls -la .output/firefox-mv3/zip/
     
     - name: Upload Chrome build artifact
       uses: actions/upload-artifact@v4
       with:
-        name: chrome-extension-v${{ steps.package_version.outputs.VERSION }}
+        name: chrome-extension
         path: .output/chrome-mv3/zip/*.zip
-        retention-days: 1
+        retention-days: 7
     
     - name: Upload Firefox build artifact
       uses: actions/upload-artifact@v4
       with:
-        name: firefox-extension-v${{ steps.package_version.outputs.VERSION }}
+        name: firefox-extension
         path: .output/firefox-mv3/zip/*.zip
-        retention-days: 1
+        retention-days: 7
 
   release:
     needs: build
@@ -72,24 +68,36 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Get version from package.json
+      id: package_version
+      run: |
+        VERSION=$(node -p "require('./package.json').version")
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Release version: $VERSION"
+    
     - name: Download Chrome artifact
       uses: actions/download-artifact@v4
       with:
-        name: chrome-extension-v${{ needs.build.outputs.version }}
+        name: chrome-extension
         path: ./chrome-extension
     
     - name: Download Firefox artifact
       uses: actions/download-artifact@v4
       with:
-        name: firefox-extension-v${{ needs.build.outputs.version }}
+        name: firefox-extension
         path: ./firefox-extension
+    
+    - name: List downloaded artifacts
+      run: |
+        ls -la ./chrome-extension/
+        ls -la ./firefox-extension/
     
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ needs.build.outputs.version }}
-        name: Release v${{ needs.build.outputs.version }}
+        tag_name: v${{ steps.package_version.outputs.VERSION }}
+        name: Release v${{ steps.package_version.outputs.VERSION }}
         draft: false
         prerelease: false
         files: |
