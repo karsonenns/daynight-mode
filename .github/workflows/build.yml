@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      chrome_zip_name: ${{ steps.set_outputs.outputs.chrome_zip_name }}
+      firefox_zip_name: ${{ steps.set_outputs.outputs.firefox_zip_name }}
+      version: ${{ steps.package_version.outputs.VERSION }}
     
     steps:
     - uses: actions/checkout@v3
@@ -20,6 +24,10 @@ jobs:
         node-version: '18'
         cache: 'npm'
         cache-dependency-path: package-lock.json
+    
+    - name: Extract version from package.json
+      id: package_version
+      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
     
     - name: Install dependencies
       run: npm ci
@@ -33,17 +41,27 @@ jobs:
     - name: Create Firefox ZIP
       run: npm run zip:firefox
     
-    - name: Upload Chrome build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: chrome-extension
-        path: .output/chrome-mv3/zip/*.zip
+    - name: Set output variables
+      id: set_outputs
+      run: |
+        chrome_zip_file=$(ls .output/chrome-mv3/zip/*.zip | head -n 1)
+        firefox_zip_file=$(ls .output/firefox-mv3/zip/*.zip | head -n 1)
+        echo "chrome_zip_name=$(basename $chrome_zip_file)" >> $GITHUB_OUTPUT
+        echo "firefox_zip_name=$(basename $firefox_zip_file)" >> $GITHUB_OUTPUT
     
-    - name: Upload Firefox build artifacts
+    - name: Upload Chrome build artifact
       uses: actions/upload-artifact@v4
       with:
-        name: firefox-extension
-        path: .output/firefox-mv3/zip/*.zip 
+        name: chrome-extension-v${{ steps.package_version.outputs.VERSION }}
+        path: .output/chrome-mv3/zip/*.zip
+        retention-days: 1
+    
+    - name: Upload Firefox build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: firefox-extension-v${{ steps.package_version.outputs.VERSION }}
+        path: .output/firefox-mv3/zip/*.zip
+        retention-days: 1
 
   release:
     needs: build
@@ -54,40 +72,28 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Extract version from package.json
-      id: package_version
-      run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-    
     - name: Download Chrome artifact
       uses: actions/download-artifact@v4
       with:
-        name: chrome-extension
+        name: chrome-extension-v${{ needs.build.outputs.version }}
         path: ./chrome-extension
     
     - name: Download Firefox artifact
       uses: actions/download-artifact@v4
       with:
-        name: firefox-extension
+        name: firefox-extension-v${{ needs.build.outputs.version }}
         path: ./firefox-extension
-    
-    - name: Find Chrome ZIP file
-      id: chrome_zip
-      run: echo "CHROME_ZIP=$(ls ./chrome-extension/*.zip | head -n 1)" >> $GITHUB_OUTPUT
-    
-    - name: Find Firefox ZIP file
-      id: firefox_zip
-      run: echo "FIREFOX_ZIP=$(ls ./firefox-extension/*.zip | head -n 1)" >> $GITHUB_OUTPUT
     
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v${{ steps.package_version.outputs.VERSION }}
-        name: Release v${{ steps.package_version.outputs.VERSION }}
+        tag_name: v${{ needs.build.outputs.version }}
+        name: Release v${{ needs.build.outputs.version }}
         draft: false
         prerelease: false
         files: |
-          ${{ steps.chrome_zip.outputs.CHROME_ZIP }}
-          ${{ steps.firefox_zip.outputs.FIREFOX_ZIP }}
+          ./chrome-extension/*.zip
+          ./firefox-extension/*.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
