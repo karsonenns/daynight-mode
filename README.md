@@ -7,7 +7,7 @@ This browser extension automatically applies a dark or light theme to websites b
 
 -  🌓 **System-Aware Theming:** Dynamically applies CSS overrides to match the system's `prefers-color-scheme` (light/dark) setting.
 -  ✅  **Selective Application:** Employs heuristics to detect and skip websites that provide their own native dark mode implementation, preventing style conflicts.
--  ⚙️ **Zero Configuration:** Works out-of-the-box after installation, requiring no manual setup.
+-  ⚙️ **Zero Configuration:** No popups or site settings.
 
 ## Install
 `npm install & npm run build`
